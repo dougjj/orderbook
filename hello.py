@@ -10,19 +10,24 @@ security = HTTPBasic()
 
 orderbook = OrderBook()
 
-@app.post("/stuff")
+@app.post("/stuff", response_class=HTMLResponse)
 async def submit_order(price:int=Form(...),
         qty:int=Form(...),
         side:str=Form(...),
         credentials: HTTPBasicCredentials = Depends(security)):
-    side2 = side == "Buy"
+    print("HELLO")
+    print(side)
+    side2 = side == "buy"
     order = Order(qty=qty, price=price, name=credentials.username, side=side2)
+    print(order)
     orderbook.buy_sell(order)
-    return orderbook.bids
+    print(orderbook.bids)
+    return await read_stuff(credentials)
 
 @app.get("/stuff", response_class=HTMLResponse)
 async def read_stuff(credentials: HTTPBasicCredentials = Depends(security)):
     username = credentials.username
+    print("read_stuff")
     return f"""
 <head>
     <meta charset="UTF-8">
@@ -44,7 +49,9 @@ async def read_stuff(credentials: HTTPBasicCredentials = Depends(security)):
 
     <button type="submit">Submit</button>
 </form>
-<p>Result: </p>
+<p>Bids: </p>
+<p>{orderbook.bids}</p>
+<p>Offers: {orderbook.offers}</p>
 </body>"""
 
 
