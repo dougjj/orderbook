@@ -52,6 +52,10 @@ async def read_stuff(credentials: HTTPBasicCredentials = Depends(security)):
 <p>Bids: </p>
 <p>{orderbook.bids}</p>
 <p>Offers: {orderbook.offers}</p>
+<p>Position</p>
+<p>{orderbook.positions[username]}</p>
+<p>Ledger</p>
+<p>{orderbook.ledger}</p>
 </body>"""
 
 
