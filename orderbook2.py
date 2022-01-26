@@ -8,7 +8,7 @@ class OrderHeap(SortedDict):
     def __init__(self, orders=[], ascending=True):
         super().__init__()
         self.ascending = ascending
-        self.order_ids = itertools.count(step=1 if ascending else -1)
+        self.order_ids = itertools.count(step=-1 if ascending else 1)
         self.price_qty = SortedDict()
         self.name_order = {}
 
@@ -16,10 +16,7 @@ class OrderHeap(SortedDict):
             self.push(order)
 
     def __repr__(self):
-        if len(self) > 20:
-            return f"OrderHeap(len={len(self)})"
-        else:
-            return super().__repr__()
+        return f"OrderHeap(len={len(self)})" if len(self) > 20 else super().__repr__()
     
     def push(self, order):
         order.order_id = next(self.order_ids)
@@ -28,7 +25,7 @@ class OrderHeap(SortedDict):
         self.name_order.setdefault(order.name, []).append(order)
         
     def pop(self):
-        _, output = self.popitem(0 if self.ascending else -1)
+        _, output = self.popitem(-1 if self.ascending else 0)
         self.price_qty[output.price] -= output.qty
         if not self.price_qty[output.price]:
             del self.price_qty[output.price]
@@ -55,7 +52,7 @@ class OrderBook:
         self.positions = {}
         
     def __repr__(self):
-        return repr(self.bids) + repr(self.offers)
+        return f"bids: {repr(self.bids)}\noffers: {repr(self.offers)}"
         
     def do_trade(self, taker, maker):
         seller = taker.name if taker.side else maker.name
@@ -106,7 +103,7 @@ class OrderBook:
 
 @dataclass
 class Order:
-    price: float
+    price: int
     qty: int
     name: str
     side: bool
