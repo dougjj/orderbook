@@ -67,7 +67,7 @@ class OrderBook:
     def do_trade(self, taker, maker):
         seller = taker.name if taker.side else maker.name
         buyer = maker.name if taker.side else taker.name
-        qty = max(taker.qty, maker.qty)
+        qty = min(taker.qty, maker.qty)
 
         taker.qty -= qty
         maker.qty -= qty
@@ -93,6 +93,8 @@ class OrderBook:
         while heap.can_trade(order.price) and order.qty > 0:
             heap_top = heap.pop()
             self.do_trade(taker=order, maker=heap_top)
+            if heap_top.qty > 0:
+                heap.push(heap_top)
             # if order.qty < heap_top.qty:
             #     self.do_trade()
             #     heap_top -= order.qty
