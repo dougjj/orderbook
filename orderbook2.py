@@ -2,13 +2,20 @@ import itertools
 from sortedcontainers import SortedDict
 from typing import Optional
 from dataclasses import dataclass
+from collections import defaultdict
+
+from enum import Enum
+
+class Side(Enum):
+    BUY = True
+    SELL = False
 
 class OrderHeap(SortedDict):
     """Actually more of a priority queue."""
     def __init__(self, orders=[], ascending=True):
         super().__init__()
         self.ascending = ascending
-        self.order_ids = itertools.count(step=-1 if ascending else 1)
+        self.order_ids = itertools.count(step=1 if ascending else -1)
         self.price_qty = SortedDict()
         self.name_order = {}
 
@@ -25,7 +32,7 @@ class OrderHeap(SortedDict):
         self.name_order.setdefault(order.name, []).append(order)
         
     def pop(self):
-        _, output = self.popitem(-1 if self.ascending else 0)
+        _, output = self.popitem(0 if self.ascending else -1)
         self.price_qty[output.price] -= output.qty
         if not self.price_qty[output.price]:
             del self.price_qty[output.price]
@@ -35,7 +42,7 @@ class OrderHeap(SortedDict):
         return output
     
     def can_trade(self, price):
-        return bool(self and (price >= min(self) if self.ascending else price <= max(self)))
+        return bool(self and (price >= min(self)[0] if self.ascending else price <= max(self)[0]))
 
 @dataclass
 class Trade:
@@ -44,15 +51,18 @@ class Trade:
     price: int
     qty: int
 
+class Positions(defaultdict):
+    pass
+
 class OrderBook:
     def __init__(self):
         self.bids = OrderHeap(ascending=False)
         self.offers = OrderHeap()
         self.ledger = []
-        self.positions = {}
+        self.positions = defaultdict(lambda: defaultdict(int))
         
     def __repr__(self):
-        return f"bids: {repr(self.bids)}\noffers: {repr(self.offers)}"
+        return f"Bids: {repr(self.bids)}\nOffers: {repr(self.offers)}"
         
     def do_trade(self, taker, maker):
         seller = taker.name if taker.side else maker.name
