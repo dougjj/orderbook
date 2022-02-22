@@ -11,7 +11,12 @@ class Side(Enum):
     SELL = False
 
 class OrderHeap(SortedDict):
-    """Actually more of a priority queue."""
+    """Actually more of a priority queue.
+    
+    Should be able to add and delete orders.
+    Get quantities at each price.
+    Get orders for each name. 
+    """
     def __init__(self, orders=[], ascending=True):
         super().__init__()
         self.ascending = ascending
@@ -95,19 +100,6 @@ class OrderBook:
             self.do_trade(taker=order, maker=heap_top)
             if heap_top.qty > 0:
                 heap.push(heap_top)
-            # if order.qty < heap_top.qty:
-            #     self.do_trade()
-            #     heap_top -= order.qty
-            #     order.qty = 0
-            #     heap.push(heap_top)
-            # else:
-            #     self.do_trade()
-            #     order.qty -= heap_top.qty
-
-            # self.do_trade(order, heap_top)
-            # trade_qty = max(heap_top.qty, order.qty)
-            # heap_top.qty -= trade_qty 
-            # order.qty -= trade_qty 
 
         if order.qty > 0:
             other_heap = self.bids if order.side else self.offers
