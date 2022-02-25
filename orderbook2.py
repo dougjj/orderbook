@@ -10,6 +10,19 @@ class Side(Enum):
     BUY = True
     SELL = False
 
+class PriceQtyDict(SortedDict):
+    """Like defaultdict, but sorted, for int only,
+    and 0s remove themselves.
+    """
+    def __getitem__(self, key):
+        return super().get(key, 0)
+    
+    def __setitem__(self, key, value):
+        if value:
+            super().__setitem__(key, value)
+        elif key in self:
+            del self[key]
+
 class OrderHeap(SortedDict):
     """Actually more of a priority queue.
     
@@ -66,9 +79,6 @@ class Trade:
     price: int
     qty: int
 
-class Positions(defaultdict):
-    pass
-
 class OrderBook:
     """
     Should be able to add_buy_sell_order
@@ -108,7 +118,7 @@ class OrderBook:
 
         self.ledger.append(trade)
 
-        cash_change = taker.price * qty
+        cash_change = maker.price * qty
         self.positions[seller]["cash"] += cash_change
         self.positions[seller]["inst"] -= qty
         self.positions[buyer]["cash"] -= cash_change

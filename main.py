@@ -1,62 +1,55 @@
-from optparse import Option
-from typing import Optional
-from fastapi import FastAPI, Form
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from fastapi import Depends, FastAPI, Form, Request
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.responses import HTMLResponse, RedirectResponse
+from jinja2 import Template
+from fastapi.templating import Jinja2Templates
 
-from orderbook import OrderBook
-
-from dataclasses import dataclass
-
-@dataclass
-class Order:
-    price: float
-    qty: int
+from orderbook2 import OrderBook, Order
 
 app = FastAPI()
+templates = Jinja2Templates(directory='templates/')
+security = HTTPBasic()
 
-book = OrderBook()
+orderbook = OrderBook()
 
-counter = [0]
+@app.post("/cancel")
+async def cancel_order(price:int=Form(...),
+        order_id:int=Form(...),
+        credentials: HTTPBasicCredentials = Depends(security)):
+        orderbook.cancel_order(order_id, price)
 
-@app.get("/stuff", response_class=HTMLResponse)
-async def read_stuff():
-    return """
-<head>
-    <meta charset="UTF-8">
-    <title>Sample Form</title>
-</head>
-<body>
-<form method="post">
-    <input type="number" name="price" value=""/>
-    <input type="number" name="qty" value=""/>
-    <input type="submit">
-</form>
-<p>Result: </p>
-</body>"""
+        return RedirectResponse(url="/trade", status_code=303)
 
-@app.post("/stuff", response_class=HTMLResponse)
-async def more_stuff(price:int=Form(...), qty:int=Form(...)):
-    book.buy(Order(price, qty))
+@app.post("/trade")
+async def submit_order(price:int=Form(...),
+        qty:int=Form(...),
+        side:str=Form(...),
+        credentials: HTTPBasicCredentials = Depends(security)):
+    side2 = side == "buy"
+    order = Order(qty=qty, price=price, name=credentials.username, side=side2)
+    orderbook.buy_sell(order)
 
-    return await read_stuff()
-    
-    print("Helo")
-    return book.bids.price_qty()
+    return RedirectResponse(url="/trade", status_code=303)
 
+@app.get("/ledger")
+async def get_ledger():
+    return orderbook.ledger
 
-@app.get("/")
-def reed_root():
-    counter[0] += 1
-    return {"counter" : counter[0]}
+@app.get("/trade", response_class=HTMLResponse)
+async def trade_window(request: Request, credentials: HTTPBasicCredentials = Depends(security)):
+    username = credentials.username
 
-@app.get("/buy/")
-def do_buy(price: int =0, qty: int = 0):
-    book.buy(Order(price, qty))
-    print("Helo")
-    return book.bids.price_qty()
+    context = {"request" : request, 
+    "position" : orderbook.positions[username],
+    "bids" : orderbook.bids.name_order[username].values(),
+    "offers" : orderbook.offers.name_order[username].values(),
+    'username' : username,
+    'ledger' : orderbook.ledger[-20:],
+    'pq_bids' : reversed(orderbook.bids.price_qty.items()[-20:]),
+    'pq_offers' : orderbook.offers.price_qty.items()[:20]}
 
-@app.post("/login/")
-async def login(username: str = Form(...), password: str = Form(...)):
-    return {"username": username}
+    return templates.TemplateResponse('trade_window.html', context=context)
 
+@app.get("/users/me")
+def read_current_user(credentials: HTTPBasicCredentials = Depends(security)):
+    return {"username": credentials.username, "password": credentials.password}
