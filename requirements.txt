@@ -1,0 +1,4 @@
+fastapi
+sortedcontainers
+python-multipart
+jinja2
