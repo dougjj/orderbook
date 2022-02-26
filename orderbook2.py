@@ -37,7 +37,7 @@ class OrderHeap(SortedDict):
         super().__init__()
         self.ascending = ascending
         self.order_ids = itertools.count(step=1 if ascending else -1)
-        self.price_qty = SortedDict()
+        self.price_qty = PriceQtyDict()
         self.name_order = defaultdict(lambda: {})#{}
 
         for order in orders:
@@ -55,15 +55,13 @@ class OrderHeap(SortedDict):
         order.order_id = next(self.order_ids)
         self[(order.price, order.order_id)] = order
         # price_qty.add(order)
-        self.price_qty[order.price] = order.qty + self.price_qty.setdefault(order.price, 0)
+        self.price_qty[order.price] += order.qty
         # self.name_order.setdefault(order.name, []).append(order)
         self.name_order[order.name][(order.price, order.order_id)] = order
         
     def pop_top(self):
         _, output = self.popitem(0 if self.ascending else -1)
         self.price_qty[output.price] -= output.qty
-        if not self.price_qty[output.price]:
-            del self.price_qty[output.price]
 
         # this bit is slow
         self.name_order[output.name].pop((output.price, output.order_id))
@@ -79,6 +77,11 @@ class Trade:
     price: int
     qty: int
 
+@dataclass
+class PositionChange:
+    cash_change : float
+    qty_change : float
+
 class OrderBook:
     """
     Should be able to add_buy_sell_order
@@ -91,6 +94,7 @@ class OrderBook:
         self.offers = OrderHeap()
         self.ledger = []
         self.positions = defaultdict(lambda: defaultdict(int))
+        self.position_changes = defaultdict(lambda: [])
         
     def __repr__(self):
         return f"Bids: {repr(self.bids)}\nOffers: {repr(self.offers)}"
@@ -102,8 +106,8 @@ class OrderBook:
             self.offers.cancel(order_id=order_id, price=price)
         
     def do_trade(self, taker, maker):
-        seller = taker.name if taker.side else maker.name
-        buyer = maker.name if taker.side else taker.name
+        buyer = taker.name if taker.side else maker.name
+        seller = maker.name if taker.side else taker.name
         qty = min(taker.qty, maker.qty)
 
         taker.qty -= qty
@@ -119,6 +123,9 @@ class OrderBook:
         self.ledger.append(trade)
 
         cash_change = maker.price * qty
+        self.position_changes[seller].append(PositionChange(cash_change=cash_change, qty_change=-qty))
+        self.position_changes[buyer].append(PositionChange(cash_change=-cash_change, qty_change=qty))
+
         self.positions[seller]["cash"] += cash_change
         self.positions[seller]["inst"] -= qty
         self.positions[buyer]["cash"] -= cash_change
@@ -136,6 +143,12 @@ class OrderBook:
         if order.qty > 0:
             other_heap = self.bids if order.side else self.offers
             other_heap.push(order)
+
+class Market(OrderBook):
+    def __init__(self, name:str, description:str):
+        self.name = name
+        self.description = description
+        super().__init__()
 
 @dataclass
 class Order:
