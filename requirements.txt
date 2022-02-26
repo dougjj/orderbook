@@ -1,3 +1,5 @@
+uvicorn
+aiofiles
 fastapi
 sortedcontainers
 python-multipart
