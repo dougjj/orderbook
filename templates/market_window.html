@@ -1,0 +1,185 @@
+<head>
+    <meta charset="UTF-8">
+    <title>{{market.name}}</title>
+
+    <style>
+        .row {
+            display: flex;
+        }
+        .column {
+            flex: 50%;
+        }
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+        text-align: left;
+        }
+
+        tr:nth-child(even) {
+        background-color: #f2f2f2;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<h2>{{market.name}}</h2>
+<p>{{market.description}}</p>
+
+<p>Username: {{username}}</p>
+<form method="post">
+    <label>Price</label>
+    <input type="number" name="price" value="0" min="1"/>
+    <label>Qty</label>
+    <input type="number" name="qty" value="0" min="1"/>
+
+    <select name="side">
+    <option value="buy">Buy</option>
+    <option value="sell">Sell</option>
+    </select>
+
+    <button type="submit">Submit</button>
+</form>
+
+<div class="row">
+<div class="column">
+
+<h3>Bids</h3>
+
+<table>
+  <tr>
+    <th>Price</th>
+    <th>Qty</th>
+  </tr>
+  {% for price, qty in market.bids.price_qty.items()[-20:]|reverse %}
+  <tr>
+    <td>{{price}}</td>
+    <td>{{qty}}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+</div>
+<div class="column">
+
+<h3>Offers</h3>
+
+<table>
+  <tr>
+    <th>Price</th>
+    <th>Qty</th>
+  </tr>
+  {% for price, qty in market.offers.price_qty.items()[:20] %}
+  <tr>
+    <td>{{price}}</td>
+    <td>{{qty}}</td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+
+<div class="column">
+    <h3>Market Trades</h3>
+
+    <table>
+      <tr>
+        <th>Price</th>
+        <th>Qty</th>
+      </tr>
+      {% for trade in market.ledger[-20:] %}
+      <tr>
+        <td>{{trade.price}}</td>
+        <td>{{trade.qty}}</td>
+      </tr>
+      {% endfor %}
+    </table>
+</div>
+
+</div>
+
+<h3>Your Position</h3>
+
+<table>
+  <tr>
+    <td>Cash</td>
+    <td>{{position['cash']}}</td>
+  </tr>
+  <tr>
+    <td>Instrument</td>
+    <td>{{position['inst']}}</td>
+  </tr>
+</table>
+
+<div class="row">
+<div class="column">
+
+<h3>Your Bids</h3>
+
+<table>
+  <tr>
+    <th>Price</th>
+    <th>Qty</th>
+    <th>Cancel</th>
+  </tr>
+  {% for bid in bids %}
+  <tr>
+    <td>{{bid.price}}</td>
+    <td>{{bid.qty}}</td>
+    <td><form action="/{{market.name}}/cancel" method="post">
+    <input type="hidden" name="order_id" value="{{bid.order_id}}"/>
+    <input type="hidden" name="price" value="{{bid.price}}"/>
+    <button type="submit">X</button>
+    </form></td>
+  </tr>
+  {% endfor %}
+</table>
+
+</div>
+<div class="column">
+
+<h3>Your Offers</h3>
+
+<table>
+  <tr>
+    <th>Price</th>
+    <th>Qty</th>
+    <th>Cancel</th>
+  </tr>
+  {% for bid in offers %}
+  <tr>
+    <td>{{bid.price}}</td>
+    <td>{{bid.qty}}</td>
+    <td><form action="/{{market.name}}/cancel" method="post">
+    <input type="hidden" name="order_id" value="{{bid.order_id}}"/>
+    <input type="hidden" name="price" value="{{bid.price}}"/>
+    <button type="submit">X</button>
+    </form></td>
+  </tr>
+  {% endfor %}
+</table>
+
+</div>
+<div class="column">
+
+<h3>Your Trades</h3>
+
+<table>
+  <tr>
+    <th>Cash change</th>
+    <th>Qty change</th>
+  </tr>
+  {% for trade in pos_change %}
+  <tr>
+    <td>{{trade.cash_change}}</td>
+    <td>{{trade.qty_change}}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+</div>
