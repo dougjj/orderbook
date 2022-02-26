@@ -63,7 +63,7 @@ class OrderHeap(SortedDict):
         _, output = self.popitem(0 if self.ascending else -1)
         self.price_qty[output.price] -= output.qty
 
-        # this bit is slow
+        # this bit is slow???
         self.name_order[output.name].pop((output.price, output.order_id))
         return output
     
