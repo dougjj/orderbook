@@ -9,6 +9,49 @@ class Order:
     qty : int
     time : int
 
+class PriceQtyDict(SortedDict):
+    """Like defaultdict, but sorted, for int only,
+    and 0s remove themselves."""
+    def __getitem__(self, key):
+        return super().get(key, 0)
+    
+    def __setitem__(self, key, value):
+        if value:
+            super().__setitem__(key, value)
+        elif key in self:
+            del self[key]
+
+class OrderQueue:
+    def __init__(self, ascending = True):
+        self.q = SortedDict()
+        self.sign = 1 if ascending else -1
+        self.price_qty = PriceQtyDict()
+        self.orders_by_name = defaultdict(lambda: {})
+
+    def add_order(self, order):
+        key = (self.sign * order.price, order.time)
+        self.q[key] = order
+        self.price_qty[order.price] += order.qty
+        self.orders_by_name[order.name][key] = order
+
+    def cancel_order(self, price, time):
+        key = (self.sign * order.price, order.time)
+        order = self.q.pop(key)
+        self.price_qty[price] -= order.qty
+        self.orders_by_name[order.name].pop(key)
+
+    def best_order(self):
+        key, order = self.q.popitem()
+        self.price_qty[order.price] -= order.qty
+        self.orders_by_name[order.name].pop(key)
+        return order
+
+    def can_trade(self, price):
+        return self.peekitem(0).price >= price
+
+    def __repr__(self):
+        return f"OrderQueue(len={len(self.q)}" if len(self.q) > 20 else repr(self.q)
+
 class OrderQueue(SortedSet):
 
     Dummy = namedtuple('Dummy', ['price', 'time'])
@@ -45,23 +88,6 @@ class BidQueue(OrderQueue):
         super.__init__(orders, key)
 
 
-# class OrderQueue(SortedDict):
-#     def __init__(self, price_ascending=True):
-#         super().__init__()
-#         self.price_ascending = price_ascending
-
-#     def add_order(self, order) -> None:
-#         key = (order.price, order.time)
-#         self[key] = order
-
-#     def cancel_order(self) -> None:
-#         pass
-
-#     def best_order(self):
-#         pass
-
-#     def can_trade(self) -> bool:
-#         pass
 
 @dataclass
 class Trade:

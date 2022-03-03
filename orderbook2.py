@@ -106,6 +106,9 @@ class OrderBook:
             self.offers.cancel(order_id=order_id, price=price)
         
     def do_trade(self, taker, maker):
+        if taker.name == maker.name:
+            return # i.e. can't trade against yourself
+            
         buyer = taker.name if taker.side else maker.name
         seller = maker.name if taker.side else taker.name
         qty = min(taker.qty, maker.qty)
